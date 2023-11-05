@@ -1,21 +1,42 @@
 from django.views import View
+from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.mail import EmailMessage
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.utils import timezone
 import os
-from django.conf import settings
-
+from .models import Mail
 
 class Homepage(View):
     template_name = "homepage.html"
 
+    def validateEmail(self,email):
+        try:
+            validate_email(email)
+            return True
+        except ValidationError:
+            return False
     def post(self, request):
-        hr_email = request.POST.get('email')
+        hr_email = request.POST.get('email').strip()
         if not hr_email.strip():
             messages.error(request,'Please enter a mail')
             return redirect('Homepage')
-        mail_subject = 'Application for Python Django Developer Position'
         
+        result = self.validateEmail(hr_email)
+        if result is False:
+            messages.error(request,'Please enter a valid email')
+            return redirect('Homepage')
+        if Mail.objects.filter(email=hr_email).exists():
+            objc = Mail.objects.filter(email=hr_email).first()
+            now = timezone.now()
+            delta = now - objc.timestamp
+            if delta.days < 15:
+                messages.error(request,'Already sent a mail within last 15 days')
+                return redirect('Homepage')
+        
+        mail_subject = 'Application for Python Django Developer Position'  
         message = '''
         Hello,
 
@@ -32,7 +53,7 @@ class Homepage(View):
         Linkedin : https://www.linkedin.com/in/mohammed-sifan-b2546b18a/
         '''
 
-        to_email = hr_email
+        to_email = hr_email.strip()
         send_email = EmailMessage(mail_subject, message, to=[to_email])
 
         pdf_file_path = os.path.join(settings.BASE_DIR, 'templates', 'mohammedsifankpresume.pdf')
@@ -41,6 +62,7 @@ class Homepage(View):
         try:
             send_email.send()
             messages.success(request, 'Mail sent successfully')
+            Mail.objects.create(email=to_email)
         except Exception as e:
             messages.error(request, f'Failed to send email: {str(e)}')
 
