@@ -1,10 +1,11 @@
-from django.views import View
+from django.views.generic import View, ListView
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.core.paginator import Paginator
 from django.utils import timezone
 import os
 from .models import Mail
@@ -70,3 +71,17 @@ class Homepage(View):
 
     def get(self, request):
         return render(request, self.template_name)
+
+
+class ListEmail(ListView):
+    paginate_by = 10
+    template_name = 'maillisting.html'
+    queryset = Mail.objects.all().order_by('-timestamp')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        paginator = Paginator(self.queryset, self.paginate_by)
+        page = self.request.GET.get('page')
+        mails = paginator.get_page(page)
+        context['mails'] = mails
+        return context
