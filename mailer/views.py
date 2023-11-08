@@ -85,3 +85,14 @@ class ListEmail(ListView):
         mails = paginator.get_page(page)
         context['mails'] = mails
         return context
+    
+class SearchEmails(View):
+    paginate_by = 10
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("query")
+        results = Mail.objects.filter(email__icontains=query)
+        paginator = Paginator(results, self.paginate_by)
+        page = self.request.GET.get('page')
+        mails = paginator.get_page(page)
+        context = {"mails": mails}
+        return render(request, "ajax/search_results.html", context)

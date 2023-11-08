@@ -1,0 +1,36 @@
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">id</th>
+            <th scope="col">Email</th>
+            <th scope="col">Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mail in mails %}
+        <tr>
+            <th scope="row">{{ mail.id }}</th>
+            <td>{{ mail.email }}</td>
+            <td>{{ mail.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="d-flex justify-content-center align-content-center w-100 ">
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            {% if mails.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ mails.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            {% for page_num in mails.paginator.page_range %}
+                <li class="page-item {% if page_num == mails.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                </li>
+            {% endfor %}
+            {% if mails.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ mails.next_page_number }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+</div>
