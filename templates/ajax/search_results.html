@@ -2,15 +2,28 @@
     <thead>
         <tr>
             <th scope="col">id</th>
+            <th scope="col">Comapny name</th>
+            <th scope="col">Jobtitle</th>
+            <th scope="col">Package</th>
+            <th scope="col">Locations</th>
             <th scope="col">Email</th>
+            <th scope="col">Mobile No</th>
+            <th scope="col">Status</th>
             <th scope="col">Date</th>
+            <th scope="col">Actions</th>
         </tr>
     </thead>
     <tbody>
         {% for mail in mails %}
         <tr>
             <th scope="row">{{ mail.id }}</th>
+            <td>{{ mail.company }}</td>
+            <td>{{ mail.jobtitle }}</td>
+            <td>{{ mail.package }}</td>
+            <td>{{ mail.location }}</td>
             <td>{{ mail.email }}</td>
+            <td>{{ mail.mobile_number }}</td>
+            <td>{{ mail.status }}</td>
             <td>{{ mail.timestamp }}</td>
         </tr>
         {% endfor %}

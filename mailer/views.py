@@ -1,42 +1,21 @@
-from django.views.generic import View, ListView
+from django.views.generic import *
 from django.conf import settings
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.contrib import messages
 from django.core.mail import EmailMessage
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.core.paginator import Paginator
-from django.utils import timezone
+from django.urls import reverse_lazy
+from django.db.models import Q
 import os
 from .models import Mail
+from .forms import JobForm
 
-class Homepage(View):
+class Homepage(CreateView):
     template_name = "homepage.html"
-
-    def validateEmail(self,email):
-        try:
-            validate_email(email)
-            return True
-        except ValidationError:
-            return False
-    def post(self, request):
-        hr_email = request.POST.get('email').strip()
-        if not hr_email.strip():
-            messages.error(request,'Please enter a mail')
-            return redirect('Homepage')
-        
-        result = self.validateEmail(hr_email)
-        if result is False:
-            messages.error(request,'Please enter a valid email')
-            return redirect('Homepage')
-        if Mail.objects.filter(email=hr_email).exists():
-            objc = Mail.objects.filter(email=hr_email).first()
-            now = timezone.now()
-            delta = now - objc.timestamp
-            if delta.days < 15:
-                messages.error(request,'Already sent a mail within last 15 days')
-                return redirect('Homepage')
-        
+    form_class = JobForm
+    success_url = reverse_lazy('Homepage') 
+    def form_valid(self, form):
+        hr_email = form.cleaned_data['email']
         mail_subject = 'Application for Python Django Developer Position'  
         message = '''
         Hello,
@@ -62,19 +41,17 @@ class Homepage(View):
 
         try:
             send_email.send()
-            messages.success(request, 'Mail sent successfully')
-            Mail.objects.create(email=to_email)
+            messages.success(self.request, 'Mail sent successfully')
         except Exception as e:
-            messages.error(request, f'Failed to send email: {str(e)}')
-
-        return redirect('Homepage')  
+            messages.error(self.request, f'Failed to send email: {str(e)}')       
+        return super().form_valid(form)
 
     def get(self, request):
         return render(request, self.template_name)
 
 
 class ListEmail(ListView):
-    paginate_by = 10
+    paginate_by = 16
     template_name = 'maillisting.html'
     queryset = Mail.objects.all().order_by('-timestamp')
 
@@ -85,12 +62,12 @@ class ListEmail(ListView):
         mails = paginator.get_page(page)
         context['mails'] = mails
         return context
-    
+
 class SearchEmails(View):
-    paginate_by = 10
+    paginate_by = 16
     def get(self, request, *args, **kwargs):
         query = request.GET.get("query")
-        results = Mail.objects.filter(email__icontains=query)
+        results = Mail.objects.filter(Q(email__icontains=query) | Q(company__icontains=query)).order_by('-timestamp')
         paginator = Paginator(results, self.paginate_by)
         page = self.request.GET.get('page')
         mails = paginator.get_page(page)
